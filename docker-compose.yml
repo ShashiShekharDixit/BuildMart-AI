@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # ========== MySQL Database ==========
+  mysql:
+    image: mysql:8.0
+    container_name: buildmart-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: buildmart123
+      MYSQL_DATABASE: buildmart_db
+      MYSQL_USER: buildmart
+      MYSQL_PASSWORD: buildmart123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - buildmart-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # ========== Redis Cache ==========
+  redis:
+    image: redis:7-alpine
+    container_name: buildmart-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - buildmart-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 5
+
+  # ========== Spring Boot Backend ==========
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: buildmart-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/buildmart_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: buildmart
+      SPRING_DATASOURCE_PASSWORD: buildmart123
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      APP_JWT_SECRET: BuildMartSecretKey2024SuperLongSecretKeyForJWTTokenGenerationMinimum512Bits
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_key_here}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - buildmart-network
+    volumes:
+      - ./logs:/app/logs
+
+  # ========== React Frontend ==========
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: buildmart-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - buildmart-network
+    environment:
+      REACT_APP_API_URL: http://localhost:8080/api
+
+networks:
+  buildmart-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
