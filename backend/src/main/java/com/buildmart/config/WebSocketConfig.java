@@ -6,57 +6,46 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-/**
- * WebSocket configuration for real-time features:
- * - Live stock updates (vendor updates → customer sees instantly)
- * - Order status tracking
- * - Real-time notifications
- * - Price change alerts
- *
- * Frontend connects via: new WebSocket('ws://localhost:8080/api/ws')
- * Or STOMP: client.connect({}, () => client.subscribe('/topic/stock', msg => ...))
- */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable simple in-memory broker for topic & queue
+        // In-memory broker for /topic (broadcast) and /queue (user-specific)
         config.enableSimpleBroker("/topic", "/queue");
-        // Application destination prefix for @MessageMapping methods
+        // Client sends to /app/... which routes to @MessageMapping methods
         config.setApplicationDestinationPrefixes("/app");
-        // User-specific destinations for private notifications
+        // User-specific destinations  e.g. /user/42/queue/notifications
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
+        registry
+            .addEndpoint("/ws")
             .setAllowedOriginPatterns("*")
-            .withSockJS(); // fallback for browsers without native WebSocket
+            .withSockJS();   // fallback for browsers without native WebSocket
     }
 
-    /**
-     * WebSocket Topics:
+    /*
+     * WebSocket topics used in BuildMart:
      *
-     * /topic/stock/{productId}     — real-time stock updates for a product
-     * /topic/prices                — price change broadcasts
-     * /topic/flash-offers          — new flash offer alerts
-     * /user/{userId}/queue/notifications — private notifications per user
-     * /user/{userId}/queue/order-updates — order status updates
+     * /topic/stock/{productId}          — live stock updates  (vendor → customers)
+     * /topic/prices                     — price change alerts (admin → all)
+     * /topic/flash-offers               — new flash sale      (admin → all)
      *
-     * Example vendor sends stock update:
+     * /user/{id}/queue/notifications    — private notification per user
+     * /user/{id}/queue/order-updates    — order status updates
+     *
+     * Example — vendor sends real-time stock update:
      *   simpMessagingTemplate.convertAndSend(
-     *     "/topic/stock/" + productId,
-     *     Map.of("productId", productId, "stock", newQty, "unit", "bags")
-     *   );
+     *       "/topic/stock/" + productId,
+     *       Map.of("productId", productId, "stock", newQty, "unit", "bags"));
      *
-     * Example order tracker:
+     * Example — order tracker:
      *   simpMessagingTemplate.convertAndSendToUser(
-     *     userId.toString(),
-     *     "/queue/order-updates",
-     *     Map.of("orderNumber", "BM-001", "status", "OUT_FOR_DELIVERY", "lat", 26.84, "lng", 80.94)
-     *   );
+     *       userId.toString(), "/queue/order-updates",
+     *       Map.of("orderNumber","BM-001","status","OUT_FOR_DELIVERY","lat",26.84,"lng",80.94));
      */
 }

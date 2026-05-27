@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Component
 @Slf4j
-public class RateLimitFilter implements Filter {
+class RateLimitFilter implements Filter {
 
     @Value("${app.rate-limit.requests-per-minute:60}")
     private int requestsPerMinute;

@@ -1,349 +1,333 @@
 package com.buildmart.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+
 import java.util.*;
 
 @RestController
 @RequestMapping("/ai")
-@RequiredArgsConstructor
 @Slf4j
 public class AIController {
 
-    @Value("${openai.api.key}")
-    private String openaiApiKey;
+    @Value("${openai.api.key:}")
+    private String openaiKey;
 
-    @Value("${openai.model}")
+    @Value("${openai.model:gpt-4o-mini}")
     private String openaiModel;
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RestTemplate  restTemplate  = new RestTemplate();
+    private final ObjectMapper  objectMapper  = new ObjectMapper();
 
-    // ========== MATERIAL ADVISOR ==========
-    /**
-     * POST /api/ai/material-advisor
-     * User describes construction need → AI calculates materials required
-     *
-     * Example input: "I need material for a 2-floor house, 1500 sq ft per floor"
-     * Returns: cement bags, bricks, sand, steel, aggregate estimates
-     */
+    // ── Material Advisor ─────────────────────────────────────────────────────
+
     @PostMapping("/material-advisor")
-    public ResponseEntity<?> materialAdvisor(@Valid @RequestBody MaterialAdvisorRequest request) {
+    public ResponseEntity<?> materialAdvisor(
+            @Valid @RequestBody MaterialAdvisorRequest req) {
+
         String systemPrompt = """
-            You are BuildMart AI Material Advisor, an expert in Indian construction materials.
-            When a user describes their construction project, calculate ACCURATE material estimates.
-            
-            Use these standard formulas:
-            - Cement: ~0.4 bags per sq ft for slab (50kg bags)
-            - Bricks: ~8-10 bricks per sq ft of wall (standard 9"x4"x3" bricks)
-            - Sand: ~1.5 cubic feet per bag of cement (for mortar+plaster)
-            - Steel/Iron Rods: ~4-5 kg per sq ft of slab
-            - Aggregate (Gravel): ~2 cubic feet per bag of cement for concrete
-            
-            Respond ONLY with valid JSON in this exact format:
+            You are BuildMart AI Material Advisor for Indian construction.
+            Calculate accurate material estimates using these formulas:
+            - Cement: 0.4 bags per sq ft (50kg bags)
+            - Bricks: 9 per sq ft of wall
+            - Sand: 1.5 cu ft per cement bag
+            - Iron Rods: 4.5 kg per sq ft of slab
+            - Aggregate: 2 cu ft per cement bag
+
+            Respond ONLY with valid JSON:
             {
-              "projectSummary": "Brief description of the project",
+              "projectSummary": "...",
               "totalArea": 1500,
               "areaUnit": "sq ft",
               "materials": [
-                {
-                  "name": "Cement",
-                  "category": "CEMENT",
-                  "quantity": 600,
-                  "unit": "bags (50kg)",
-                  "estimatedCost": 180000,
-                  "notes": "Includes 10% wastage buffer"
-                }
+                {"name":"Cement","quantity":600,"unit":"bags (50kg)","estimatedCost":228000,"notes":"Includes 10% wastage"}
               ],
               "totalEstimatedCost": 850000,
-              "disclaimer": "Estimates vary ±15% based on design and quality",
-              "tips": ["Tip 1", "Tip 2"]
+              "disclaimer": "Estimates vary ±15%",
+              "tips": ["tip1","tip2"]
             }
             """;
 
-        String userMessage = "Project: " + request.getDescription();
-        if (request.getAreaSqFt() != null) {
-            userMessage += "\nTotal area: " + request.getAreaSqFt() + " sq ft";
-        }
-        if (request.getFloors() != null) {
-            userMessage += "\nNumber of floors: " + request.getFloors();
+        String userMsg = "Project: " + req.getDescription();
+        if (req.getAreaSqFt() != null) userMsg += "\nArea: " + req.getAreaSqFt() + " sq ft";
+        if (req.getFloors()   != null) userMsg += "\nFloors: " + req.getFloors();
+
+        if (openaiKey == null || openaiKey.isBlank()) {
+            log.warn("OpenAI key not configured — returning formula fallback");
+            return ResponseEntity.ok(formulaFallback(req));
         }
 
         try {
-            String aiResponse = callOpenAI(systemPrompt, userMessage);
-            Object parsed = objectMapper.readValue(aiResponse, Object.class);
+            String raw    = callOpenAI(systemPrompt, userMsg, 1000);
+            Object parsed = objectMapper.readValue(raw, Object.class);
             return ResponseEntity.ok(parsed);
         } catch (Exception e) {
-            log.error("Material advisor error", e);
-            return ResponseEntity.ok(getFallbackMaterialEstimate(request));
+            log.error("Material advisor AI error: {}", e.getMessage());
+            return ResponseEntity.ok(formulaFallback(req));
         }
     }
 
-    // ========== PRICE PREDICTION ==========
-    /**
-     * POST /api/ai/price-prediction
-     * Predict if material prices will rise/fall next month
-     */
+    // ── Price Predictor ──────────────────────────────────────────────────────
+
     @PostMapping("/price-prediction")
-    public ResponseEntity<?> pricePrediction(@Valid @RequestBody PricePredictionRequest request) {
+    public ResponseEntity<?> pricePrediction(
+            @Valid @RequestBody PricePredictionRequest req) {
+
         String systemPrompt = """
-            You are BuildMart AI Price Analyst specializing in Indian construction material markets.
-            Analyze market trends and predict price movements for the next 30 days.
-            
-            Consider: seasonal demand (monsoon slows construction, winters increase), 
-            government infrastructure projects, fuel prices affecting transport,
-            raw material costs, festive season construction boom.
-            
+            You are BuildMart AI Price Analyst for Indian construction materials.
+            Predict price movements for the next 30 days.
+            Consider: seasonal demand, monsoon, fuel prices, infrastructure projects.
+
             Respond ONLY with valid JSON:
             {
               "material": "Cement",
-              "currentPriceRange": {"min": 350, "max": 420, "unit": "per 50kg bag"},
               "prediction": "INCREASE",
               "predictedChangePercent": 5.5,
               "confidence": "HIGH",
-              "timeframe": "Next 30 days",
-              "factors": ["Factor 1", "Factor 2"],
+              "factors": ["reason1","reason2"],
               "recommendation": "Buy now before prices rise",
-              "historicalTrend": "Prices typically rise 8-12% during Oct-Dec construction season"
+              "historicalTrend": "..."
             }
             """;
 
-        String userMessage = "Predict price trend for: " + request.getMaterial()
-                + " in region: " + request.getRegion()
-                + " for month: " + request.getTargetMonth();
+        String userMsg = "Predict price for: " + req.getMaterial()
+                       + " in region: "   + req.getRegion();
+
+        if (openaiKey == null || openaiKey.isBlank()) {
+            return ResponseEntity.ok(Map.of(
+                "material",               req.getMaterial(),
+                "prediction",             "STABLE",
+                "predictedChangePercent", 2.5,
+                "confidence",             "MEDIUM",
+                "recommendation",         "Market appears stable. Good time to order.",
+                "factors",                List.of("Stable fuel prices", "Normal seasonal demand")
+            ));
+        }
 
         try {
-            String aiResponse = callOpenAI(systemPrompt, userMessage);
-            Object parsed = objectMapper.readValue(aiResponse, Object.class);
+            String raw    = callOpenAI(systemPrompt, userMsg, 600);
+            Object parsed = objectMapper.readValue(raw, Object.class);
             return ResponseEntity.ok(parsed);
         } catch (Exception e) {
-            log.error("Price prediction error", e);
+            log.error("Price prediction AI error: {}", e.getMessage());
             return ResponseEntity.ok(Map.of(
-                "material", request.getMaterial(),
+                "material",   req.getMaterial(),
                 "prediction", "STABLE",
-                "confidence", "MEDIUM",
-                "recommendation", "Current prices are reasonable. Monitor weekly."
-            ));
+                "confidence", "LOW",
+                "recommendation", "Unable to predict at this time. Please try again."));
         }
     }
 
-    // ========== CHATBOT ==========
-    /**
-     * POST /api/ai/chat
-     * Conversational AI assistant for BuildMart
-     */
+    // ── Chatbot ──────────────────────────────────────────────────────────────
+
     @PostMapping("/chat")
-    public ResponseEntity<?> chat(@Valid @RequestBody ChatRequest request) {
+    public ResponseEntity<?> chat(@Valid @RequestBody ChatRequest req) {
+
         String systemPrompt = """
-            You are BuildMart AI Assistant — a friendly, expert AI for India's smartest construction material marketplace.
-            
-            You help users:
-            1. Find the right construction materials
-            2. Estimate quantities for projects
-            3. Explain material quality grades (Grade A, B, C)
-            4. Calculate delivery ETAs based on location
-            5. Suggest alternatives if a material is out of stock
-            6. Explain product specifications (e.g., M25 cement vs M30)
-            7. Guide through ordering process
-            8. Answer questions about GST, invoices, returns
-            
-            Be concise, helpful, and use simple language. When asked for quantities,
-            always ask for area/dimensions if not provided.
-            
-            Available categories: Cement, Bricks, Sand, Iron Rods, Aggregate, Tiles, Marble, Pipes, Paint, Hardware
-            
-            If asked about prices, say prices vary by vendor and suggest searching on BuildMart.
-            Always end with a helpful follow-up question or suggestion.
+            You are BuildMart AI Assistant — expert in Indian construction materials.
+            Help users:
+            1. Estimate material quantities for their projects
+            2. Find the right products (cement grades, brick types, etc.)
+            3. Explain quality grades (M25, M30, Fe500, Grade A/B/C)
+            4. Answer delivery and pricing questions
+            5. Suggest alternatives when products are unavailable
+            Be concise, helpful, and use simple language.
+            Available categories: Cement, Bricks, Sand, Iron Rods, Aggregate,
+            Tiles, Marble, Pipes, Paint, Hardware.
             """;
 
-        // Build conversation history
         List<Map<String, String>> messages = new ArrayList<>();
-        if (request.getHistory() != null) {
-            for (ChatMessage msg : request.getHistory()) {
+        if (req.getHistory() != null) {
+            for (ChatMessage msg : req.getHistory()) {
                 messages.add(Map.of("role", msg.getRole(), "content", msg.getContent()));
             }
         }
-        messages.add(Map.of("role", "user", "content", request.getMessage()));
+        messages.add(Map.of("role", "user", "content", req.getMessage()));
 
-        try {
-            String aiResponse = callOpenAIWithHistory(systemPrompt, messages);
+        if (openaiKey == null || openaiKey.isBlank()) {
             return ResponseEntity.ok(Map.of(
-                "reply", aiResponse,
+                "reply",     "AI service is not configured. Please add your OpenAI API key to application.properties.",
                 "timestamp", System.currentTimeMillis()
             ));
+        }
+
+        try {
+            String reply = callOpenAIWithHistory(systemPrompt, messages, 500);
+            return ResponseEntity.ok(Map.of("reply", reply, "timestamp", System.currentTimeMillis()));
         } catch (Exception e) {
-            log.error("Chatbot error", e);
+            log.error("Chatbot error: {}", e.getMessage());
             return ResponseEntity.ok(Map.of(
-                "reply", "I'm having trouble connecting right now. Please try again in a moment, or browse our products directly!",
+                "reply",     "I'm having trouble connecting right now. Please browse our products directly!",
                 "timestamp", System.currentTimeMillis()
             ));
         }
     }
 
-    // ========== FRAUD DETECTION ==========
-    /**
-     * POST /api/ai/fraud-check (Admin only, called internally)
-     * Detect suspicious vendor profiles or listings
-     */
+    // ── Fraud Detection (Admin) ───────────────────────────────────────────────
+
     @PostMapping("/fraud-check")
-    public ResponseEntity<?> fraudCheck(@RequestBody FraudCheckRequest request) {
+    public ResponseEntity<?> fraudCheck(@RequestBody FraudCheckRequest req) {
+
         String systemPrompt = """
-            You are BuildMart Fraud Detection AI. Analyze vendor/product data for suspicious patterns.
-            
-            Red flags to check:
-            - Prices 40%+ below market average (price dumping scam)
-            - Stock quantities unrealistically high (fake inventory)
-            - GST numbers in invalid format
-            - Duplicate product listings with different prices
-            - New vendors with bulk listings of high-value items
-            - Reviews that are too generic/repetitive (spam)
-            - Phone numbers from outside India
-            
+            You are BuildMart Fraud Detection AI.
+            Analyze vendor/product data for suspicious patterns:
+            - Prices 40%+ below market average
+            - Unrealistically high stock from new vendors
+            - Invalid GST formats
+            - Duplicate listings with different prices
+
             Respond ONLY with JSON:
-            {
-              "riskScore": 75,
-              "riskLevel": "HIGH",
-              "flags": ["Flag 1", "Flag 2"],
-              "recommendation": "SUSPEND_PENDING_REVIEW",
-              "details": "Explanation"
-            }
+            {"riskScore":75,"riskLevel":"HIGH","flags":["..."],"recommendation":"SUSPEND_PENDING_REVIEW"}
             """;
 
-        String userMessage = "Analyze this vendor/listing data: " + request.getData();
+        if (openaiKey == null || openaiKey.isBlank()) {
+            return ResponseEntity.ok(Map.of(
+                "riskScore",  0, "riskLevel", "LOW",
+                "flags",      List.of(),
+                "recommendation", "AI unavailable — manual review required"));
+        }
 
         try {
-            String aiResponse = callOpenAI(systemPrompt, userMessage);
-            Object parsed = objectMapper.readValue(aiResponse, Object.class);
+            String raw    = callOpenAI(systemPrompt, "Analyze: " + req.getData(), 400);
+            Object parsed = objectMapper.readValue(raw, Object.class);
             return ResponseEntity.ok(parsed);
         } catch (Exception e) {
-            return ResponseEntity.ok(Map.of("riskScore", 0, "riskLevel", "LOW", "flags", List.of()));
+            log.error("Fraud check error: {}", e.getMessage());
+            return ResponseEntity.ok(Map.of("riskScore", 0, "riskLevel", "UNKNOWN"));
         }
     }
 
-    // ========== SMART RECOMMENDATIONS ==========
-    /**
-     * GET /api/ai/recommendations
-     * Personalized product recommendations
-     */
     @GetMapping("/recommendations")
     public ResponseEntity<?> getRecommendations(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String city) {
-        // In production: uses user order history + collaborative filtering
-        return ResponseEntity.ok(Map.of(
-            "message", "AI recommendations based on your activity",
-            "products", List.of()
-        ));
+        return ResponseEntity.ok(Map.of("products", List.of(),
+            "message", "AI recommendations based on your activity"));
     }
 
-    // ========== HELPER METHODS ==========
+    // ── Private helpers ───────────────────────────────────────────────────────
 
-    private String callOpenAI(String systemPrompt, String userMessage) {
+    private String callOpenAI(String systemPrompt, String userMessage, int maxTokens) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(openaiApiKey);
+        headers.setBearerAuth(openaiKey);
 
-        Map<String, Object> requestBody = Map.of(
-            "model", openaiModel,
-            "messages", List.of(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", userMessage)
+        Map<String, Object> body = Map.of(
+            "model",      openaiModel,
+            "messages",   List.of(
+                Map.of("role", "system",  "content", systemPrompt),
+                Map.of("role", "user",    "content", userMessage)
             ),
-            "max_tokens", 1000,
+            "max_tokens", maxTokens,
             "temperature", 0.3
         );
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-            "https://api.openai.com/v1/chat/completions", entity, Map.class);
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+            "https://api.openai.com/v1/chat/completions",
+            new HttpEntity<>(body, headers), Map.class);
 
-        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-        return (String) message.get("content");
+        return extractContent(resp.getBody());
     }
 
-    private String callOpenAIWithHistory(String systemPrompt, List<Map<String, String>> history) {
+    private String callOpenAIWithHistory(String systemPrompt,
+                                         List<Map<String, String>> history,
+                                         int maxTokens) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(openaiApiKey);
+        headers.setBearerAuth(openaiKey);
 
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", systemPrompt));
         messages.addAll(history);
 
-        Map<String, Object> requestBody = Map.of(
-            "model", openaiModel,
-            "messages", messages,
-            "max_tokens", 500,
+        Map<String, Object> body = Map.of(
+            "model",      openaiModel,
+            "messages",   messages,
+            "max_tokens", maxTokens,
             "temperature", 0.7
         );
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-            "https://api.openai.com/v1/chat/completions", entity, Map.class);
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+            "https://api.openai.com/v1/chat/completions",
+            new HttpEntity<>(body, headers), Map.class);
 
-        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        return extractContent(resp.getBody());
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractContent(Map<?, ?> responseBody) {
+        List<Map<String, Object>> choices =
+            (List<Map<String, Object>>) responseBody.get("choices");
+        Map<String, Object> message =
+            (Map<String, Object>) choices.get(0).get("message");
         return (String) message.get("content");
     }
 
-    private Map<String, Object> getFallbackMaterialEstimate(MaterialAdvisorRequest request) {
-        int area = request.getAreaSqFt() != null ? request.getAreaSqFt() : 1000;
-        int floors = request.getFloors() != null ? request.getFloors() : 1;
-        int totalArea = area * floors;
+    private Map<String, Object> formulaFallback(MaterialAdvisorRequest req) {
+        int area   = req.getAreaSqFt() != null ? req.getAreaSqFt() : 1000;
+        int floors = req.getFloors()   != null ? req.getFloors()   : 1;
+        int total  = area * floors;
 
         return Map.of(
-            "projectSummary", "Estimated materials for " + totalArea + " sq ft construction",
-            "totalArea", totalArea,
-            "areaUnit", "sq ft",
+            "projectSummary",      "Formula-based estimate for " + total + " sq ft",
+            "totalArea",           total,
+            "areaUnit",            "sq ft",
             "materials", List.of(
-                Map.of("name", "Cement", "quantity", totalArea * 0.4, "unit", "bags (50kg)", "estimatedCost", totalArea * 0.4 * 380),
-                Map.of("name", "Bricks", "quantity", totalArea * 9, "unit", "pieces", "estimatedCost", totalArea * 9 * 8),
-                Map.of("name", "Sand", "quantity", totalArea * 0.6, "unit", "cubic meters", "estimatedCost", totalArea * 0.6 * 1200),
-                Map.of("name", "Iron Rods", "quantity", totalArea * 4.5, "unit", "kg", "estimatedCost", totalArea * 4.5 * 65),
-                Map.of("name", "Aggregate", "quantity", totalArea * 0.8, "unit", "cubic meters", "estimatedCost", totalArea * 0.8 * 900)
+                Map.of("name","Cement",    "quantity",(int)(total*0.4), "unit","bags (50kg)",    "estimatedCost",(int)(total*0.4*380), "notes","Includes 10% wastage"),
+                Map.of("name","Bricks",    "quantity",(int)(total*9),   "unit","pieces",          "estimatedCost",(int)(total*9*8)),
+                Map.of("name","Sand",      "quantity",(int)(total*0.6), "unit","cubic meters",    "estimatedCost",(int)(total*0.6*1200)),
+                Map.of("name","Iron Rods", "quantity",(int)(total*4.5), "unit","kg",              "estimatedCost",(int)(total*4.5*65)),
+                Map.of("name","Aggregate", "quantity",(int)(total*0.8), "unit","cubic meters",    "estimatedCost",(int)(total*0.8*900))
             ),
-            "disclaimer", "These are approximate estimates. ±15% variation expected based on design.",
+            "totalEstimatedCost",  (int)(total*(0.4*380 + 9*8 + 0.6*1200 + 4.5*65 + 0.8*900)),
+            "disclaimer",          "Estimates vary ±15% based on design and quality.",
             "tips", List.of(
-                "Order 10% extra for wastage",
-                "Verify with a local civil engineer",
-                "Compare prices from multiple vendors on BuildMart"
+                "Add 10% extra material for wastage",
+                "Compare prices from multiple vendors on BuildMart",
+                "Verify quantities with a local civil engineer"
             )
         );
     }
 
-    // ========== DTOs ==========
-    @Data public static class MaterialAdvisorRequest {
-        @NotBlank private String description;
-        private Integer areaSqFt;
-        private Integer floors;
-        private String constructionType; // residential, commercial, renovation
+    // ── DTOs ─────────────────────────────────────────────────────────────────
+
+    @Data
+    public static class MaterialAdvisorRequest {
+        @NotBlank private String  description;
+        private Integer           areaSqFt;
+        private Integer           floors;
+        private String            constructionType;
     }
 
-    @Data public static class PricePredictionRequest {
+    @Data
+    public static class PricePredictionRequest {
         @NotBlank private String material;
-        private String region;
-        private String targetMonth;
+        private String           region;
+        private String           targetMonth;
     }
 
-    @Data public static class ChatRequest {
-        @NotBlank private String message;
-        private List<ChatMessage> history;
+    @Data
+    public static class ChatRequest {
+        @NotBlank private String        message;
+        private List<ChatMessage>        history;
     }
 
-    @Data public static class ChatMessage {
-        private String role; // user or assistant
+    @Data
+    public static class ChatMessage {
+        private String role;
         private String content;
     }
 
-    @Data public static class FraudCheckRequest {
-        private String data; // JSON string of vendor/product data
+    @Data
+    public static class FraudCheckRequest {
+        private String data;
     }
 }

@@ -12,8 +12,3 @@ logs/
 uploads/
 .DS_Store
 Thumbs.db
-.cache/
-.parcel-cache/
-target/
-*.class
-coverage/
