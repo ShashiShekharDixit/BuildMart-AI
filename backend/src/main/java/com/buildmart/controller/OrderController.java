@@ -1,7 +1,6 @@
 package com.buildmart.controller;
 
 import com.buildmart.service.OrderService;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -158,9 +157,14 @@ public class OrderController {
 
     // ── DTO ───────────────────────────────────────────────────────────────────
 
-    @Data
     public static class ReturnRequest {
         private String reason;
         private String description;
-    }
+
+    // --- Generated getters and setters ---
+        public String getReason() { return this.reason; }
+        public void setReason(String reason) { this.reason = reason; }
+        public String getDescription() { return this.description; }
+        public void setDescription(String description) { this.description = description; }
+}
 }

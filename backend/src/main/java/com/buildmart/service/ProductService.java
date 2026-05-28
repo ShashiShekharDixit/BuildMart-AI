@@ -2,7 +2,6 @@ package com.buildmart.service;
 
 import com.buildmart.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -15,12 +14,17 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class ProductService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
+
 
     // Uncomment when wiring repository:
     // private final ProductRepository productRepo;
@@ -94,4 +98,11 @@ public class ProductService {
         //     .stream().map(this::toDto).collect(Collectors.toList());
         return List.of();
     }
+
+    public Map<String, Object> compareProducts(List<Long> ids) {
+        if (ids == null || ids.size() < 2 || ids.size() > 4)
+            throw new BusinessException("Compare 2 to 4 products at a time");
+        return Map.of("products", List.of(), "ids", ids);
+    }
+
 }

@@ -5,9 +5,7 @@ import com.buildmart.security.UserDetailsServiceImpl;
 import com.buildmart.service.AuthService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -16,12 +14,17 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@Slf4j
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
 
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
@@ -143,7 +146,6 @@ public class AuthController {
 
     // ── Request DTOs ─────────────────────────────────────────────────────────
 
-    @Data
     public static class RegisterRequest {
         @NotBlank @Email                               private String email;
         @NotBlank @Size(min = 8)                       private String password;
@@ -151,17 +153,39 @@ public class AuthController {
         @NotBlank @Size(max = 50)                      private String lastName;
         @Pattern(regexp = "^[6-9]\\d{9}$|^$")         private String phone;
         @NotBlank @Pattern(regexp = "CUSTOMER|VENDOR") private String role;
+
+        public String getEmail()     { return this.email; }
+        public void setEmail(String v)     { this.email = v; }
+        public String getPassword()  { return this.password; }
+        public void setPassword(String v)  { this.password = v; }
+        public String getFirstName() { return this.firstName; }
+        public void setFirstName(String v) { this.firstName = v; }
+        public String getLastName()  { return this.lastName; }
+        public void setLastName(String v)  { this.lastName = v; }
+        public String getPhone()     { return this.phone; }
+        public void setPhone(String v)     { this.phone = v; }
+        public String getRole()      { return this.role; }
+        public void setRole(String v)      { this.role = v; }
     }
 
-    @Data
     public static class LoginRequest {
         @NotBlank @Email   private String email;
         @NotBlank          private String password;
-    }
 
-    @Data
+    // --- Generated getters and setters ---
+        public String getEmail() { return this.email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getPassword() { return this.password; }
+        public void setPassword(String password) { this.password = password; }
+}
+
     public static class ResetPasswordRequest {
-        @NotBlank          private String token;
+        @NotBlank               private String token;
         @NotBlank @Size(min = 8) private String newPassword;
+
+        public String getToken()       { return this.token; }
+        public void setToken(String v)       { this.token = v; }
+        public String getNewPassword() { return this.newPassword; }
+        public void setNewPassword(String v) { this.newPassword = v; }
     }
 }

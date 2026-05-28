@@ -3,17 +3,21 @@ package com.buildmart.util;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Component
-@Slf4j
 public class RateLimitFilter implements Filter {
+
+    private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
+
 
     @Value("${app.rate-limit.requests-per-minute:60}")
     private int requestsPerMinute;

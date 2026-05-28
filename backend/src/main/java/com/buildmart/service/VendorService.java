@@ -1,7 +1,6 @@
 package com.buildmart.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,12 +8,17 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class VendorService {
+
+    private static final Logger log = LoggerFactory.getLogger(VendorService.class);
+
 
     // private final VendorRepository vendorRepo;
     // private final OrderRepository orderRepo;

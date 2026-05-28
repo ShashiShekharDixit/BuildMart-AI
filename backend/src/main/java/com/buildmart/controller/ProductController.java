@@ -3,7 +3,6 @@ package com.buildmart.controller;
 import com.buildmart.service.ProductService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -143,7 +142,6 @@ public class ProductController {
 
     // ── DTOs ─────────────────────────────────────────────────────────────────
 
-    @Data
     public static class ProductRequest {
         @NotBlank                              private String name;
         private String                                        description;
@@ -158,11 +156,43 @@ public class ProductController {
         private String                                        specifications;
         private Double                                        bulkMinQuantity;
         private BigDecimal                                    bulkPrice;
-    }
 
-    @Data
+    // --- Generated getters and setters ---
+        public String getName() { return this.name; }
+        public void setName(String name) { this.name = name; }
+        public String getDescription() { return this.description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getBrand() { return this.brand; }
+        public void setBrand(String brand) { this.brand = brand; }
+        public String getCategory() { return this.category; }
+        public void setCategory(String category) { this.category = category; }
+        public BigDecimal getBasePrice() { return this.basePrice; }
+        public void setBasePrice(BigDecimal basePrice) { this.basePrice = basePrice; }
+        public BigDecimal getCurrentPrice() { return this.currentPrice; }
+        public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
+        public String getUnit() { return this.unit; }
+        public void setUnit(String unit) { this.unit = unit; }
+        public Double getStockQuantity() { return this.stockQuantity; }
+        public void setStockQuantity(Double stockQuantity) { this.stockQuantity = stockQuantity; }
+        public Double getMinOrderQuantity() { return this.minOrderQuantity; }
+        public void setMinOrderQuantity(Double minOrderQuantity) { this.minOrderQuantity = minOrderQuantity; }
+        public String getQualityGrade() { return this.qualityGrade; }
+        public void setQualityGrade(String qualityGrade) { this.qualityGrade = qualityGrade; }
+        public String getSpecifications() { return this.specifications; }
+        public void setSpecifications(String specifications) { this.specifications = specifications; }
+        public Double getBulkMinQuantity() { return this.bulkMinQuantity; }
+        public void setBulkMinQuantity(Double bulkMinQuantity) { this.bulkMinQuantity = bulkMinQuantity; }
+        public BigDecimal getBulkPrice() { return this.bulkPrice; }
+        public void setBulkPrice(BigDecimal bulkPrice) { this.bulkPrice = bulkPrice; }
+}
+
     public static class ReviewRequest {
         @NotNull @Min(1) @Max(5) private Integer rating;
         @Size(max = 1000)        private String  comment;
+
+        public Integer getRating()  { return this.rating; }
+        public void setRating(Integer v)  { this.rating = v; }
+        public String getComment()  { return this.comment; }
+        public void setComment(String v)  { this.comment = v; }
     }
 }

@@ -2,18 +2,22 @@ package com.buildmart.service;
 
 import com.buildmart.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class WalletService {
+
+    private static final Logger log = LoggerFactory.getLogger(WalletService.class);
+
 
     // private final WalletRepository walletRepo;
 

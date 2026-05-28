@@ -1,16 +1,20 @@
 package com.buildmart.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminService.class);
+
 
     // private final UserRepository userRepo;
     // private final VendorRepository vendorRepo;

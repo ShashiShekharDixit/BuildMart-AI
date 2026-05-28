@@ -1,20 +1,23 @@
 package com.buildmart.service;
 
 import com.buildmart.exception.BusinessException;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
 
     // private final OrderRepository orderRepo;
     // private final CartRepository cartRepo;
@@ -87,7 +90,6 @@ public class OrderService {
             + String.format("%08d", (long)(Math.random() * 99999999));
     }
 
-    @Data
     public static class PlaceOrderRequest {
         private Long addressId;
         private String paymentMethod;
@@ -95,5 +97,19 @@ public class OrderService {
         private Boolean useWallet;
         private String deliveryNotes;
         private String scheduledDelivery;
-    }
+
+    // --- Generated getters and setters ---
+        public Long getAddressId() { return this.addressId; }
+        public void setAddressId(Long addressId) { this.addressId = addressId; }
+        public String getPaymentMethod() { return this.paymentMethod; }
+        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+        public String getCouponCode() { return this.couponCode; }
+        public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+        public Boolean getUseWallet() { return this.useWallet; }
+        public void setUseWallet(Boolean useWallet) { this.useWallet = useWallet; }
+        public String getDeliveryNotes() { return this.deliveryNotes; }
+        public void setDeliveryNotes(String deliveryNotes) { this.deliveryNotes = deliveryNotes; }
+        public String getScheduledDelivery() { return this.scheduledDelivery; }
+        public void setScheduledDelivery(String scheduledDelivery) { this.scheduledDelivery = scheduledDelivery; }
+}
 }

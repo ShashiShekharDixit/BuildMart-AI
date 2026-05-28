@@ -1,8 +1,6 @@
 package com.buildmart.service;
 
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * AuthService — registration, OTP, password reset, token management.
@@ -22,8 +23,10 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
 
     // private final UserRepository userRepository;
     // private final WalletRepository walletRepository;
@@ -131,7 +134,6 @@ public class AuthService {
 
     // ── DTOs ──────────────────────────────────────────────────────────────────
 
-    @Data
     public static class RegisterRequest {
         private String email;
         private String password;
@@ -139,5 +141,19 @@ public class AuthService {
         private String lastName;
         private String phone;
         private String role; // CUSTOMER | VENDOR
-    }
+
+    // --- Generated getters and setters ---
+        public String getEmail() { return this.email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getPassword() { return this.password; }
+        public void setPassword(String password) { this.password = password; }
+        public String getFirstName() { return this.firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+        public String getLastName() { return this.lastName; }
+        public void setLastName(String lastName) { this.lastName = lastName; }
+        public String getPhone() { return this.phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getRole() { return this.role; }
+        public void setRole(String role) { this.role = role; }
+}
 }

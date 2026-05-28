@@ -1,7 +1,6 @@
 package com.buildmart.controller;
 
 import com.buildmart.service.VendorService;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -88,7 +87,6 @@ public class VendorController {
         return ResponseEntity.ok(Map.of("message", "Flash offer created."));
     }
 
-    @Data
     public static class VendorProfileRequest {
         private String  businessName;
         private String  gstNumber;
@@ -99,5 +97,25 @@ public class VendorController {
         private Integer deliveryRadiusKm;
         private String  warehouseDetails;
         private String  businessDescription;
-    }
+
+    // --- Generated getters and setters ---
+        public String getBusinessName() { return this.businessName; }
+        public void setBusinessName(String businessName) { this.businessName = businessName; }
+        public String getGstNumber() { return this.gstNumber; }
+        public void setGstNumber(String gstNumber) { this.gstNumber = gstNumber; }
+        public String getBusinessAddress() { return this.businessAddress; }
+        public void setBusinessAddress(String businessAddress) { this.businessAddress = businessAddress; }
+        public String getCity() { return this.city; }
+        public void setCity(String city) { this.city = city; }
+        public String getState() { return this.state; }
+        public void setState(String state) { this.state = state; }
+        public String getPincode() { return this.pincode; }
+        public void setPincode(String pincode) { this.pincode = pincode; }
+        public Integer getDeliveryRadiusKm() { return this.deliveryRadiusKm; }
+        public void setDeliveryRadiusKm(Integer deliveryRadiusKm) { this.deliveryRadiusKm = deliveryRadiusKm; }
+        public String getWarehouseDetails() { return this.warehouseDetails; }
+        public void setWarehouseDetails(String warehouseDetails) { this.warehouseDetails = warehouseDetails; }
+        public String getBusinessDescription() { return this.businessDescription; }
+        public void setBusinessDescription(String businessDescription) { this.businessDescription = businessDescription; }
+}
 }

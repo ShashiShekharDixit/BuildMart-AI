@@ -3,20 +3,23 @@ package com.buildmart.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @RestController
 @RequestMapping("/ai")
-@Slf4j
 public class AIController {
+
+    private static final Logger log = LoggerFactory.getLogger(AIController.class);
+
 
     @Value("${openai.api.key:}")
     private String openaiKey;
@@ -299,35 +302,64 @@ public class AIController {
 
     // ── DTOs ─────────────────────────────────────────────────────────────────
 
-    @Data
     public static class MaterialAdvisorRequest {
         @NotBlank private String  description;
         private Integer           areaSqFt;
         private Integer           floors;
         private String            constructionType;
-    }
 
-    @Data
+    // --- Generated getters and setters ---
+        public String getDescription() { return this.description; }
+        public void setDescription(String description) { this.description = description; }
+        public Integer getAreaSqFt() { return this.areaSqFt; }
+        public void setAreaSqFt(Integer areaSqFt) { this.areaSqFt = areaSqFt; }
+        public Integer getFloors() { return this.floors; }
+        public void setFloors(Integer floors) { this.floors = floors; }
+        public String getConstructionType() { return this.constructionType; }
+        public void setConstructionType(String constructionType) { this.constructionType = constructionType; }
+}
+
     public static class PricePredictionRequest {
         @NotBlank private String material;
         private String           region;
         private String           targetMonth;
-    }
 
-    @Data
+    // --- Generated getters and setters ---
+        public String getMaterial() { return this.material; }
+        public void setMaterial(String material) { this.material = material; }
+        public String getRegion() { return this.region; }
+        public void setRegion(String region) { this.region = region; }
+        public String getTargetMonth() { return this.targetMonth; }
+        public void setTargetMonth(String targetMonth) { this.targetMonth = targetMonth; }
+}
+
     public static class ChatRequest {
         @NotBlank private String        message;
         private List<ChatMessage>        history;
-    }
 
-    @Data
+    // --- Generated getters and setters ---
+        public String getMessage() { return this.message; }
+        public void setMessage(String message) { this.message = message; }
+        public List<ChatMessage> getHistory() { return this.history; }
+        public void setHistory(List<ChatMessage> history) { this.history = history; }
+}
+
     public static class ChatMessage {
         private String role;
         private String content;
-    }
 
-    @Data
+    // --- Generated getters and setters ---
+        public String getRole() { return this.role; }
+        public void setRole(String role) { this.role = role; }
+        public String getContent() { return this.content; }
+        public void setContent(String content) { this.content = content; }
+}
+
     public static class FraudCheckRequest {
         private String data;
-    }
+
+    // --- Generated getters and setters ---
+        public String getData() { return this.data; }
+        public void setData(String data) { this.data = data; }
+}
 }

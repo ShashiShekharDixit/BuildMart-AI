@@ -1,7 +1,6 @@
 package com.buildmart.security;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,6 +9,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * UserDetailsService — loads user for Spring Security authentication.
@@ -23,8 +25,10 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class UserDetailsServiceImpl implements UserDetailsService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserDetailsServiceImpl.class);
+
 
     // Uncomment when UserRepository is wired and DB is configured:
     // private final UserRepository userRepository;
